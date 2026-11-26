@@ -135,11 +135,11 @@ export default function Footer() {
               <div className="flex items-center gap-3 text-cream/75">
                 <Phone className="w-4 h-4 text-gold-brass shrink-0" />
                 <a
-                  href="tel:+918026684573"
+                  href="tel:+919606719324"
                   className="hover:text-gold-brass transition-colors font-body font-medium"
                   aria-label="Call Brown Label Coffee"
                 >
-                  080-2668 4573 / 74
+                  +91 96067 19324
                 </a>
               </div>
 

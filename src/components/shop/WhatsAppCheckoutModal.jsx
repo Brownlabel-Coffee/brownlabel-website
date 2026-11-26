@@ -196,7 +196,7 @@ export default function WhatsAppCheckoutModal({ isOpen, onClose }) {
                     Direct Roastery WhatsApp Order
                   </h3>
                   <span className="text-[11px] sm:text-xs text-emerald-400 font-mono">
-                    Official Roastery Dispatch Line
+                    Official Line: +91 96067 19324
                   </span>
                 </div>
               </div>
