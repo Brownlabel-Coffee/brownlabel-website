@@ -64,5 +64,8 @@ npm start
 
 ## 🔐 Roastery Admin Dashboard
 - Append `#admin` to the website URL (e.g., `https://www.brownlabelcoffee.com/#admin`).
-- Enter the master PIN: **`1984`** (Brown Label Coffee's founding year).
+- The default passkey is Brown Label Coffee's founding year (`1984`). It is stored only as a SHA-256 hash.
+- To rotate the passkey, set `brownlabel_admin_custom_pin_hash` in `localStorage` to the SHA-256 hex digest of your new passkey.
 - Manage inquiries, live order history, catalog prices, and product availability.
+
+> ⚠️ **Security note:** this dashboard currently runs entirely in the browser (`localStorage` / `sessionStorage`). It is fine for demos and single-device use, but it is **not** a secure production admin system. For production, move authentication, orders, inquiries, and catalog data to a backend with server-side sessions and a database.

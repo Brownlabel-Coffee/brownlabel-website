@@ -47,6 +47,8 @@ export default function Navbar({ onCartOpen, hasAnnouncement = false }) {
               <img
                 src="/images/logo.png"
                 alt="Brown Label Coffee"
+                width={216}
+                height={160}
                 className="h-full w-full object-contain filter brightness-95 group-hover:brightness-105 transition-all"
               />
             </div>

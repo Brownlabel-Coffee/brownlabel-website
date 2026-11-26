@@ -30,6 +30,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { useAdminData } from '../../context/AdminDataContext';
+import { useCart } from '../../context/CartContext';
 
 const darkStatusColors = {
   New: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -70,8 +71,22 @@ export default function AdminDashboard({ onExit }) {
     updateProduct,
     deleteProduct,
     resetToDemoData,
+    clearAllData,
     exportData,
   } = useAdminData();
+  const { clearCart } = useCart();
+
+  const handleClearAll = () => {
+    if (
+      !window.confirm(
+        'Clear all cart items, inquiries, and orders, and reset the catalog to its default products? This cannot be undone.'
+      )
+    ) {
+      return;
+    }
+    clearAllData();
+    clearCart();
+  };
 
   // Theme Mode: 'light' (Bright Studio) vs 'dark' (Espresso Night)
   const [theme, setTheme] = useState(() => {
@@ -124,7 +139,7 @@ export default function AdminDashboard({ onExit }) {
     colorPrimary: '#D6A265',
     colorSecondary: '#C48A47',
     badge: 'New Harvest',
-    image: '/images/premium-gold.jpeg',
+    image: '/images/premium-gold.webp',
     price200: 230,
     price400: 430,
     price500: 520,
@@ -134,10 +149,10 @@ export default function AdminDashboard({ onExit }) {
   const [newProduct, setNewProduct] = useState(initialNewProduct);
 
   const availableImages = [
-    { label: 'Ultra Rich Pouch', path: '/images/ultra-rich.jpeg', color: '#FFDA27' },
-    { label: 'Extra Strong Pouch', path: '/images/extra-strong.jpeg', color: '#F47B20' },
-    { label: 'Premium Gold Pouch', path: '/images/premium-gold.jpeg', color: '#D6A265' },
-    { label: 'Roasted Beans Pouch', path: '/images/roasted-beans.jpeg', color: '#8B5E3C' },
+    { label: 'Ultra Rich Pouch', path: '/images/ultra-rich.webp', color: '#FFDA27' },
+    { label: 'Extra Strong Pouch', path: '/images/extra-strong.webp', color: '#F47B20' },
+    { label: 'Premium Gold Pouch', path: '/images/premium-gold.webp', color: '#D6A265' },
+    { label: 'Roasted Beans Pouch', path: '/images/roasted-beans.webp', color: '#8B5E3C' },
   ];
 
   const colorPresets = [
@@ -162,7 +177,7 @@ export default function AdminDashboard({ onExit }) {
       colorPrimary: '#D6A265',
       colorSecondary: '#C48A47',
       badge: 'Micro-Lot',
-      image: '/images/premium-gold.jpeg',
+      image: '/images/premium-gold.webp',
       price200: 249,
       price400: 469,
       price500: 559,
@@ -180,7 +195,7 @@ export default function AdminDashboard({ onExit }) {
       colorPrimary: '#8B5E3C',
       colorSecondary: '#5C3D2E',
       badge: 'Heritage Lot',
-      image: '/images/roasted-beans.jpeg',
+      image: '/images/roasted-beans.webp',
       price200: 269,
       price400: 499,
       price500: 599,
@@ -198,7 +213,7 @@ export default function AdminDashboard({ onExit }) {
       colorPrimary: '#F47B20',
       colorSecondary: '#E85D04',
       badge: 'Intense Brew',
-      image: '/images/extra-strong.jpeg',
+      image: '/images/extra-strong.webp',
       price200: 219,
       price400: 419,
       price500: 499,
@@ -357,6 +372,8 @@ export default function AdminDashboard({ onExit }) {
               <img
                 src="/images/logo.png"
                 alt="Brown Label Roastery"
+                width={216}
+                height={160}
                 className="h-full w-full object-contain"
               />
             </div>
@@ -428,7 +445,15 @@ export default function AdminDashboard({ onExit }) {
             </button>
 
             <button
-              onClick={resetToDemoData}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    'Reset all inquiries, orders, and products to the demo data? This cannot be undone.'
+                  )
+                ) {
+                  resetToDemoData();
+                }
+              }}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-xs transition-colors border cursor-pointer ${
                 isLight
                   ? 'bg-white hover:bg-stone-50 text-stone-700 border-stone-300 shadow-2xs'
@@ -438,6 +463,19 @@ export default function AdminDashboard({ onExit }) {
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Reset Demo</span>
+            </button>
+
+            <button
+              onClick={handleClearAll}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-xs transition-colors border cursor-pointer ${
+                isLight
+                  ? 'bg-white hover:bg-rose-50 text-rose-700 border-rose-200'
+                  : 'bg-white/5 hover:bg-rose-500/10 text-rose-300 border-rose-500/20'
+              }`}
+              title="Clear cart, inquiries, and orders"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Clear All</span>
             </button>
 
             <button
@@ -1148,7 +1186,11 @@ export default function AdminDashboard({ onExit }) {
                         </div>
 
                         <button
-                          onClick={() => deleteInquiry(inq.id)}
+                          onClick={() => {
+                            if (window.confirm('Delete this inquiry? This cannot be undone.')) {
+                              deleteInquiry(inq.id);
+                            }
+                          }}
                           className="text-xs text-red-500 hover:text-red-700 font-mono inline-flex items-center gap-1 transition-colors p-1 cursor-pointer"
                           title="Delete inquiry record"
                         >
@@ -1362,7 +1404,11 @@ export default function AdminDashboard({ onExit }) {
                       </div>
 
                       <button
-                        onClick={() => deleteOrder(ord.id)}
+                        onClick={() => {
+                          if (window.confirm('Delete this order? This cannot be undone.')) {
+                            deleteOrder(ord.id);
+                          }
+                        }}
                         className="text-xs text-red-500 hover:text-red-700 font-mono inline-flex items-center gap-1 transition-colors p-1 cursor-pointer"
                         title="Remove order record"
                       >
@@ -1912,8 +1958,12 @@ export default function AdminDashboard({ onExit }) {
                         }`}
                       >
                         <img
-                          src={prod.image || '/images/roasted-beans.jpeg'}
+                          src={prod.image || '/images/roasted-beans.webp'}
                           alt={prod.name}
+                          width={1024}
+                          height={1280}
+                          loading="lazy"
+                          decoding="async"
                           className="h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform"
                         />
                       </div>
@@ -2046,6 +2096,13 @@ export default function AdminDashboard({ onExit }) {
                         <button
                           type="button"
                           onClick={() => {
+                            if (
+                              !window.confirm(
+                                `Remove "${prod.name} — ${prod.variant}" from the catalog? This cannot be undone.`
+                              )
+                            ) {
+                              return;
+                            }
                             deleteProduct(prod.id);
                             setToastMessage(`Removed blend "${prod.name} — ${prod.variant}"`);
                             setTimeout(() => setToastMessage(''), 3000);

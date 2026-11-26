@@ -3,8 +3,34 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Lock, ArrowLeft, KeyRound, AlertCircle } from 'lucide-react';
 
 const SESSION_KEY = 'brownlabel_admin_auth_session';
-const PIN_KEY = 'brownlabel_admin_custom_pin';
-const DEFAULT_PIN = '1984'; // Heritage founding year
+const PIN_HASH_KEY = 'brownlabel_admin_custom_pin_hash';
+const DEFAULT_PIN_HASH = '4dea5c7cb70f50322ec9d734aa4aa078be9227c05251e18991c596f387552370';
+
+async function hashPin(value) {
+  if (!window.crypto?.subtle) {
+    throw new Error('Secure context required for passkey verification.');
+  }
+  const data = new TextEncoder().encode(value);
+  const digest = await window.crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function getStoredPinHash() {
+  try {
+    return localStorage.getItem(PIN_HASH_KEY) || DEFAULT_PIN_HASH;
+  } catch {
+    return DEFAULT_PIN_HASH;
+  }
+}
+
+function createSessionToken() {
+  if (window.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(24);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+}
 
 export function checkAdminSession() {
   try {
@@ -25,7 +51,7 @@ export function grantAdminSession() {
     sessionStorage.setItem(
       SESSION_KEY,
       JSON.stringify({
-        token: Math.random().toString(36).substring(2) + Date.now().toString(36),
+        token: createSessionToken(),
         timestamp: Date.now(),
       })
     );
@@ -44,8 +70,6 @@ export default function AdminAuthGate({ onAuthenticated, onCancel }) {
   const [attempts, setAttempts] = useState(0);
   const [lockedUntil, setLockedUntil] = useState(0);
 
-  const activePin = typeof window !== 'undefined' ? localStorage.getItem(PIN_KEY) || DEFAULT_PIN : DEFAULT_PIN;
-
   const isLocked = lockedUntil > Date.now();
   const remainingLockTime = Math.ceil((lockedUntil - Date.now()) / 1000);
 
@@ -63,11 +87,19 @@ export default function AdminAuthGate({ onAuthenticated, onCancel }) {
     return () => clearInterval(timer);
   }, [isLocked, lockedUntil]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLocked) return;
+    if (isLocked || !pin) return;
 
-    if (pin === activePin) {
+    let matches = false;
+    try {
+      matches = (await hashPin(pin)) === getStoredPinHash();
+    } catch {
+      setError('Secure context required for passkey verification. Please use HTTPS.');
+      return;
+    }
+
+    if (matches) {
       grantAdminSession();
       onAuthenticated();
     } else {
@@ -166,7 +198,7 @@ export default function AdminAuthGate({ onAuthenticated, onCancel }) {
 
         <div className="mt-8 pt-4 border-t border-white/10 text-center">
           <p className="text-[10px] text-cream/40 font-mono">
-            Default passkey: <span className="text-gold-brass/70">1984</span> (Founding Year)
+            Authorized roastery personnel only. All access attempts are logged.
           </p>
         </div>
       </motion.div>

@@ -1,9 +1,54 @@
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 
 export default function CartDrawer({ isOpen, onClose, onWhatsAppCheckout }) {
   const { cart, removeItem, updateQuantity, totalItems, subtotalPrice, taxAmount, totalPrice, clearCart } = useCart();
+  const drawerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.activeElement;
+    const node = drawerRef.current;
+
+    const getFocusable = () =>
+      node
+        ? Array.from(
+            node.querySelectorAll(
+              'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+            )
+          ).filter((el) => el.offsetParent !== null)
+        : [];
+
+    getFocusable()[0]?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const list = getFocusable();
+      if (list.length === 0) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previous && typeof previous.focus === 'function') previous.focus();
+    };
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
@@ -20,6 +65,9 @@ export default function CartDrawer({ isOpen, onClose, onWhatsAppCheckout }) {
 
           {/* Luxury Sliding Drawer */}
           <motion.aside
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
             aria-label="Shopping Cart Drawer"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}

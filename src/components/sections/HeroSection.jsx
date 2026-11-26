@@ -1,8 +1,8 @@
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, ArrowDown } from 'lucide-react';
-import SceneContainer from '../3d/SceneContainer';
-import ScrollCoffeeBean from '../3d/ScrollCoffeeBean';
-import FloatingBeansParticles from '../3d/FloatingBeansParticles';
+
+const Hero3D = lazy(() => import('../3d/Hero3D'));
 
 const stats = [
   { value: '43 Years', label: 'Roastery Legacy' },
@@ -12,6 +12,29 @@ const stats = [
 ];
 
 export default function HeroSection({ isPaused = false }) {
+  const stageRef = useRef(null);
+  const [show3D, setShow3D] = useState(false);
+
+  useEffect(() => {
+    const node = stageRef.current;
+    if (!node) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setShow3D(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShow3D(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
       id="home"
@@ -68,14 +91,18 @@ export default function HeroSection({ isPaused = false }) {
           </div>
 
           {/* Right: Uncaged 3D Coffee Bean with Generous Whitespace (5 cols) */}
-          <div className="lg:col-span-5 relative h-[440px] sm:h-[520px] lg:h-[600px] flex items-center justify-center">
+          <div
+            ref={stageRef}
+            className="lg:col-span-5 relative h-[440px] sm:h-[520px] lg:h-[600px] flex items-center justify-center"
+          >
             {/* Soft Warm Pedestal Glow */}
             <div className="absolute inset-0 bg-radial from-amber-600/10 via-transparent to-transparent blur-2xl pointer-events-none" />
 
-            <SceneContainer camera={{ position: [0, 0, 4.6], fov: 40 }} isPaused={isPaused}>
-              <ScrollCoffeeBean />
-              <FloatingBeansParticles count={6} />
-            </SceneContainer>
+            {show3D ? (
+              <Suspense fallback={null}>
+                <Hero3D isPaused={isPaused} />
+              </Suspense>
+            ) : null}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MessageCircle, Copy, ExternalLink, Check, MapPin, User, AlertCircle, ShoppingBag } from 'lucide-react';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useAdminData } from '../../context/AdminDataContext';
 
@@ -30,8 +30,62 @@ export default function WhatsAppCheckoutModal({ isOpen, onClose }) {
     }
   });
   const [validationError, setValidationError] = useState('');
+  const modalRef = useRef(null);
+  const orderLoggedRef = useRef(false);
 
   const phoneNumber = '919081751379';
+
+  const cartSignature = useMemo(
+    () => cart.map((item) => `${item.id}:${item.size}:${item.quantity}`).join('|'),
+    [cart]
+  );
+
+  useEffect(() => {
+    if (isOpen) orderLoggedRef.current = false;
+  }, [isOpen, cartSignature]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.activeElement;
+    const node = modalRef.current;
+
+    const getFocusable = () =>
+      node
+        ? Array.from(
+            node.querySelectorAll(
+              'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+            )
+          ).filter((el) => el.offsetParent !== null)
+        : [];
+
+    getFocusable()[0]?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const list = getFocusable();
+      if (list.length === 0) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previous && typeof previous.focus === 'function') previous.focus();
+    };
+  }, [isOpen]);
 
   // Memoize static cart text so it doesn't recalculate on every keystroke
   const cartSummaryText = useMemo(() => {
@@ -65,7 +119,8 @@ export default function WhatsAppCheckoutModal({ isOpen, onClose }) {
       localStorage.setItem('brownlabel-customer-pincode', pincode.trim());
     } catch {}
 
-    if (addOrder && cart.length > 0) {
+    if (addOrder && cart.length > 0 && !orderLoggedRef.current) {
+      orderLoggedRef.current = true;
       addOrder({
         customerName: name.trim() || 'Online Web Customer',
         phone: '+91 (WhatsApp Web)',
@@ -93,12 +148,16 @@ export default function WhatsAppCheckoutModal({ isOpen, onClose }) {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!validateAndSave()) return;
     const finalMessage = getFullMessage();
-    navigator.clipboard.writeText(finalMessage);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(finalMessage);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setValidationError('Unable to access the clipboard. Please copy the order text manually.');
+    }
   };
 
   return (
@@ -116,6 +175,10 @@ export default function WhatsAppCheckoutModal({ isOpen, onClose }) {
 
           {/* Modal Card with CSS isolation */}
           <motion.div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="whatsapp-checkout-title"
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -129,7 +192,7 @@ export default function WhatsAppCheckoutModal({ isOpen, onClose }) {
                   <MessageCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-display text-base sm:text-lg font-bold text-cream leading-tight">
+                  <h3 id="whatsapp-checkout-title" className="font-display text-base sm:text-lg font-bold text-cream leading-tight">
                     Direct Roastery WhatsApp Order
                   </h3>
                   <span className="text-[11px] sm:text-xs text-emerald-400 font-mono">

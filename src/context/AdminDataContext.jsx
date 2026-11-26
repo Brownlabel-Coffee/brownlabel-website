@@ -3,9 +3,9 @@ import { products as defaultProducts } from '../data/products';
 
 const AdminDataContext = createContext();
 
-const INQUIRIES_KEY = 'brownlabel-admin-inquiries-v1';
-const ORDERS_KEY = 'brownlabel-admin-orders-v1';
-const PRODUCTS_KEY = 'brownlabel-admin-products-v3';
+const INQUIRIES_KEY = 'brownlabel-admin-inquiries-v2';
+const ORDERS_KEY = 'brownlabel-admin-orders-v2';
+const PRODUCTS_KEY = 'brownlabel-admin-products-v4';
 
 const defaultInquiries = [
   {
@@ -119,25 +119,38 @@ export function AdminDataProvider({ children }) {
   const [inquiries, setInquiries] = useState(() => {
     try {
       const saved = localStorage.getItem(INQUIRIES_KEY);
-      return saved ? JSON.parse(saved) : defaultInquiries;
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      return defaultInquiries;
+      return [];
     }
   });
 
   const [orders, setOrders] = useState(() => {
     try {
       const saved = localStorage.getItem(ORDERS_KEY);
-      return saved ? JSON.parse(saved) : defaultOrders;
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      return defaultOrders;
+      return [];
     }
   });
 
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem(PRODUCTS_KEY);
-      return saved ? JSON.parse(saved) : defaultProducts;
+      if (!saved) return defaultProducts;
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return defaultProducts;
+      return parsed.map((product) => ({
+        ...product,
+        image:
+          typeof product?.image === 'string'
+            ? product.image.replace(/\.jpeg$/i, '.webp')
+            : product?.image,
+      }));
     } catch {
       return defaultProducts;
     }
@@ -169,10 +182,10 @@ export function AdminDataProvider({ children }) {
 
   const addInquiry = (inquiry) => {
     const newInq = {
+      ...inquiry,
       id: `INQ-${Math.floor(1000 + Math.random() * 9000)}`,
       createdAt: new Date().toISOString(),
       status: 'New',
-      ...inquiry,
     };
     setInquiries((prev) => [newInq, ...prev]);
     return newInq;
@@ -190,10 +203,10 @@ export function AdminDataProvider({ children }) {
 
   const addOrder = (order) => {
     const newOrd = {
+      ...order,
       id: `BL-${Math.floor(10000 + Math.random() * 90000)}`,
       createdAt: new Date().toISOString(),
       status: 'Pending',
-      ...order,
     };
     setOrders((prev) => [newOrd, ...prev]);
     return newOrd;
@@ -215,10 +228,10 @@ export function AdminDataProvider({ children }) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
     const newProd = {
+      ...productData,
       id: slug || `blend-${Date.now()}`,
       createdAt: new Date().toISOString(),
       inStock: true,
-      ...productData,
     };
     setProducts((prev) => [newProd, ...prev]);
     return newProd;
@@ -241,6 +254,20 @@ export function AdminDataProvider({ children }) {
     localStorage.setItem(INQUIRIES_KEY, JSON.stringify(defaultInquiries));
     localStorage.setItem(ORDERS_KEY, JSON.stringify(defaultOrders));
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(defaultProducts));
+  };
+
+  const clearAllData = () => {
+    setInquiries([]);
+    setOrders([]);
+    setProducts(defaultProducts);
+    try {
+      localStorage.setItem(INQUIRIES_KEY, '[]');
+      localStorage.setItem(ORDERS_KEY, '[]');
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(defaultProducts));
+      localStorage.removeItem('brownlabel-customer-name');
+      localStorage.removeItem('brownlabel-customer-address');
+      localStorage.removeItem('brownlabel-customer-pincode');
+    } catch {}
   };
 
   const exportData = () => {
@@ -276,6 +303,7 @@ export function AdminDataProvider({ children }) {
         updateProduct,
         deleteProduct,
         resetToDemoData,
+        clearAllData,
         exportData,
       }}
     >

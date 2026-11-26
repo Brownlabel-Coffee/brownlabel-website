@@ -17,7 +17,7 @@ function CollectionCard({ product, index }) {
     setTimeout(() => setAdded(false), 1600);
   };
 
-  const imageSrc = product.image || '/images/roasted-beans.jpeg';
+  const imageSrc = product.image || '/images/roasted-beans.webp';
 
   return (
     <div className="group flex flex-col bg-cream-50 border border-espresso-950/10 rounded-xs overflow-hidden transition-all duration-300 hover:shadow-lg">
@@ -38,6 +38,8 @@ function CollectionCard({ product, index }) {
         <img
           src={imageSrc}
           alt={`${product.name} — ${product.variant}`}
+          width={1024}
+          height={1280}
           className="h-full w-full object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.7)] group-hover:scale-105 transition-transform duration-700 relative z-10"
           loading="lazy"
           decoding="async"

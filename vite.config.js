@@ -9,6 +9,9 @@ export default defineConfig({
     },
   },
   build: {
+    modulePreload: {
+      resolveDependencies: (filename, deps) => deps.filter((dep) => !dep.includes('three-vendor')),
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -24,6 +27,6 @@ export default defineConfig({
         },
       },
     },
-    chunkSizeWarningLimit: 750,
+    chunkSizeWarningLimit: 1000,
   },
 });

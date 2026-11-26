@@ -1,20 +1,20 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
-import { products } from '../data/products';
+import { useAdminData } from './AdminDataContext';
 
 const CartContext = createContext();
 
-const STORAGE_KEY = 'brownlabel-cart';
+const STORAGE_KEY = 'brownlabel-cart-v2';
 
 // Authoritative sanitizer: never trust raw prices or sizes from localStorage
-function sanitizeAndHydrateCart(rawItems) {
-  if (!Array.isArray(rawItems)) return [];
+function sanitizeAndHydrateCart(rawItems, catalogProducts) {
+  if (!Array.isArray(rawItems) || !Array.isArray(catalogProducts)) return [];
 
   const sanitized = [];
 
   for (const item of rawItems) {
     if (!item || typeof item !== 'object') continue;
 
-    const authoritativeProduct = products.find((p) => p.id === item.id);
+    const authoritativeProduct = catalogProducts.find((p) => p.id === item.id);
     if (!authoritativeProduct) continue;
 
     // Verify size exists in authoritative catalog
@@ -42,15 +42,54 @@ function sanitizeAndHydrateCart(rawItems) {
   return sanitized;
 }
 
-function loadCart() {
+function loadCart(catalogProducts) {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return [];
     const parsed = JSON.parse(saved);
-    return sanitizeAndHydrateCart(parsed);
+    return sanitizeAndHydrateCart(parsed, catalogProducts);
   } catch {
     return [];
   }
+}
+
+function syncCartWithCatalog(items, catalogProducts) {
+  if (!Array.isArray(catalogProducts)) return items;
+
+  const synced = items
+    .map((item) => {
+      const product = catalogProducts.find((p) => p.id === item.id);
+      if (!product) return null;
+
+      const sizes = Object.keys(product.prices || {});
+      const size = sizes.includes(item.size) ? item.size : sizes[0];
+      if (!size) return null;
+
+      return {
+        ...item,
+        name: product.name,
+        variant: product.variant,
+        size,
+        price: product.prices[size],
+        taxRate: product.taxRate || 0,
+        colorPrimary: product.colorPrimary,
+      };
+    })
+    .filter(Boolean);
+
+  const unchanged =
+    synced.length === items.length &&
+    synced.every(
+      (item, index) =>
+        item.size === items[index].size &&
+        item.price === items[index].price &&
+        item.name === items[index].name &&
+        item.variant === items[index].variant &&
+        item.taxRate === items[index].taxRate &&
+        item.colorPrimary === items[index].colorPrimary
+    );
+
+  return unchanged ? items : synced;
 }
 
 function cartReducer(state, action) {
@@ -82,13 +121,22 @@ function cartReducer(state, action) {
         .filter((item) => item.quantity > 0);
     case 'CLEAR_CART':
       return [];
+    case 'SYNC_CATALOG':
+      return syncCartWithCatalog(state, action.products);
     default:
       return state;
   }
 }
 
 export function CartProvider({ children }) {
-  const [cart, dispatch] = useReducer(cartReducer, [], () => loadCart());
+  const { products: catalogProducts } = useAdminData();
+  const [cart, dispatch] = useReducer(cartReducer, catalogProducts, (initialCatalog) =>
+    loadCart(initialCatalog)
+  );
+
+  useEffect(() => {
+    dispatch({ type: 'SYNC_CATALOG', products: catalogProducts });
+  }, [catalogProducts]);
 
   useEffect(() => {
     try {
