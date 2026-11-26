@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Test screenshots & reference images
+before-enhancement.png
+enhanced-ui.png
+final-enhancement.png
+hero-restored.png
+test-bean-scale.png
+test-screenshot.png
+/Images/
+test images/
+images for demo/
+3d models/
+scratch/
+scripts/
+
+# Environment & Secrets
+.env
+.env.*
+*.local
+*.pem
+*.key
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Misc
+brain.md
+coffee prompt.md
